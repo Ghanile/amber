@@ -28,6 +28,8 @@ package haven;
 
 import haven.automation.ErrorSysMsgCallback;
 import haven.automation.PickForageable;
+import haven.automation.PrintSurround;			//[Cosper]
+import haven.automation.Tester;					//[Cosper]
 import haven.livestock.LivestockManager;
 import haven.resutil.FoodInfo;
 
@@ -1009,6 +1011,16 @@ public class GameUI extends ConsoleHost implements Console.Directory {
             return true;
         } else if (!ev.isShiftDown() && ev.getKeyCode() == KeyEvent.VK_Q) {
             Thread t = new Thread(new PickForageable(this), "PickForageable");
+            t.start();
+            return true;
+		//[Cosper] Print Surround function
+        }else if (!ev.isShiftDown() && ev.getKeyCode() == KeyEvent.VK_P) {
+            Thread t = new Thread(new PrintSurround(this), "PrintSurround");
+            t.start();
+            return true;
+        //[Cosper] Tester Function
+		}else if (!ev.isShiftDown() && ev.getKeyCode() == KeyEvent.VK_O) {
+            Thread t = new Thread(new Tester(this), "Tester");
             t.start();
             return true;
         }
