@@ -907,9 +907,6 @@ public class GameUI extends ConsoleHost implements Console.Directory {
         if (key == ':') {
             entercmd();
             return (true);
-        } else if (ev.isShiftDown() && ev.getKeyCode() == KeyEvent.VK_DELETE) {
-            toggleui();
-            return (true);
         } else if (key == 3) {
             if (chat.visible && !chat.hasfocus) {
                 setfocus(chat);
@@ -1013,37 +1010,24 @@ public class GameUI extends ConsoleHost implements Console.Directory {
             Thread t = new Thread(new PickForageable(this), "PickForageable");
             t.start();
             return true;
-		//[Cosper] Print Surround function
-        }else if (!ev.isShiftDown() && ev.getKeyCode() == KeyEvent.VK_P) {
+        } else if (ev.isControlDown() && ev.getKeyCode() == KeyEvent.VK_U) {
+            TexGL.disableall = !TexGL.disableall;
+            return true;
+        //[Cosper] Print Surround function
+        } else if (!ev.isShiftDown() && ev.getKeyCode() == KeyEvent.VK_P) {
             Thread t = new Thread(new PrintSurround(this), "PrintSurround");
             t.start();
             return true;
         //[Cosper] Tester Function
-		}else if (!ev.isShiftDown() && ev.getKeyCode() == KeyEvent.VK_O) {
+		} else if (!ev.isShiftDown() && ev.getKeyCode() == KeyEvent.VK_O) {
             Thread t = new Thread(new Tester(this), "Tester");
             t.start();
             return true;
-        }
         return (super.globtype(key, ev));
     }
 
     public boolean mousedown(Coord c, int button) {
         return (super.mousedown(c, button));
-    }
-
-    private boolean uishowing = true;
-
-    // TODO: toggle chat, betls, and minimap visibility as well
-    public void toggleui() {
-        Hidepanel[] panels = {brpanel, ulpanel, umpanel, urpanel, menupanel};
-        uishowing = !uishowing;
-        if (uishowing) {
-            for (Hidepanel p : panels)
-                p.mshow(true);
-        } else {
-            for (Hidepanel p : panels)
-                p.mshow(false);
-        }
     }
 
     public void resize(Coord sz) {

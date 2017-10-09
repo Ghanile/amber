@@ -125,7 +125,12 @@ public abstract class Sprite implements Rendered {
         {
             Factory f = res.getcode(Factory.class, false);
             if (f != null)
-                return (f.create(owner, res, sdt));
+                try {
+                    return (f.create(owner, res, sdt));
+                } catch (NullPointerException e) {
+                    // FIXME: temporary fix for gem iconsigns
+                    return Sprite.create(null, res, Message.nil);
+                }
         }
         for (Factory f : factories) {
             Sprite ret = f.create(owner, res, sdt);
