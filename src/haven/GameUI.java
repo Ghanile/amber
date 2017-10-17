@@ -1023,6 +1023,7 @@ public class GameUI extends ConsoleHost implements Console.Directory {
             Thread t = new Thread(new Tester(this), "Tester");
             t.start();
             return true;
+		}
         return (super.globtype(key, ev));
     }
 
