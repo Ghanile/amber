@@ -120,11 +120,19 @@ public class MenuGrid extends Widget {
         }
 
         private List<ItemInfo> info = null;
-        public Glob glob() {return(glob);}
+
         public List<ItemInfo> info() {
-            if(info == null)
+            if (info == null)
                 info = ItemInfo.buildinfo(this, rawinfo);
-            return(info);
+            return (info);
+        }
+
+        private static final OwnerContext.ClassResolver<Pagina> ctxr = new OwnerContext.ClassResolver<Pagina>()
+                .add(Glob.class, p -> p.glob)
+                .add(Session.class, p -> p.glob.sess);
+
+        public <T> T context(Class<T> cl) {
+            return (ctxr.context(cl, this));
         }
     }
 
@@ -248,7 +256,7 @@ public class MenuGrid extends Widget {
                     Pagina btn = null;
                     if ((this.cur != null) && (x == gsz.x - 1) && (y == gsz.y - 1)) {
                         btn = bk;
-                    } else if ((cur.size() > ((gsz.x * gsz.y) - 1)) && (x == gsz.x - 2) && (y == gsz.y - 1)) {
+                    } else if ((cur.size() - curoff > gsz.x * gsz.y - 1) && (x == gsz.x - 2) && (y == gsz.y - 1)) {
                         btn = next;
                     } else if (i < cur.size()) {
                         Resource.AButton ad = cur.get(i).act();

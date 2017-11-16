@@ -59,6 +59,7 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
     private int[] visol = new int[32];
     private Grabber grab;
     private Selector selection;
+    private MCache.Overlay miningOverlay;
     private Coord3f camoff = new Coord3f(Coord3f.o);
     public double shake = 0.0;
     public static int plobgran = 8;
@@ -69,6 +70,7 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
     private Coord lasttc = Coord.z;
     private static final Gob.Overlay rovlsupport = new Gob.Overlay(new BPRadSprite(100.0F, 0, BPRadSprite.smatDanger));
     private static final Gob.Overlay rovlcolumn = new Gob.Overlay(new BPRadSprite(125.0F, 0, BPRadSprite.smatDanger));
+    private static final Gob.Overlay rovlbeam = new Gob.Overlay(new BPRadSprite(150.0F, 0, BPRadSprite.smatDanger));
     private static final Gob.Overlay rovltrough = new Gob.Overlay(new BPRadSprite(200.0F, -10.0F, BPRadSprite.smatTrough));
     private static final Gob.Overlay rovlbeehive = new Gob.Overlay(new BPRadSprite(151.0F, -10.0F, BPRadSprite.smatBeehive));
     private long lastmmhittest = System.currentTimeMillis();
@@ -669,6 +671,9 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
             show = Config.showminerad;
         } else if (gob.type == Gob.Type.STONE_SUPPORT) {
             rovl = rovlcolumn;
+            show = Config.showminerad;
+        } else if (gob.type == Gob.Type.METAL_SUPPORT) {
+            rovl = rovlbeam;
             show = Config.showminerad;
         }
 
@@ -1889,10 +1894,10 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
     }
 
     public boolean mousedown(Coord c, int button) {
-        if (selection != null && selection.olSecondary != null) {
-            selection.olSecondary.destroy();
+        if (miningOverlay != null && button == 1) {
+            miningOverlay.destroy();
             disol(18);
-            selection.olSecondary = null;
+            miningOverlay = null;
         }
         parent.setfocus(this);
         if (button == 2) {
@@ -2133,7 +2138,6 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
     private class Selector implements Grabber {
         Coord sc;
         MCache.Overlay ol;
-        MCache.Overlay olSecondary;
         UI.Grab mgrab;
         int modflags;
         Text tt;
@@ -2188,9 +2192,9 @@ public class MapView extends PView implements DTarget, Console.Directory, PFList
                     xl.mv = false;
                     tt = null;
                     Resource curs = ui.root.getcurs(c);
-                    if (curs != null && curs.name.equals("gfx/hud/curs/mine")) {
+                    if (button == 1 && curs != null && curs.name.equals("gfx/hud/curs/mine")) {
                         synchronized (glob.map.grids) {
-                            olSecondary = glob.map.new Overlay(ol.getc1(), ol.getc2(), 1 << 18);
+                            miningOverlay = glob.map.new Overlay(ol.getc1(), ol.getc2(), 1 << 18);
                         }
                         enol(18);
                     }
