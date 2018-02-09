@@ -37,12 +37,13 @@ public class Fightsess extends Widget {
     public static final Coord actframeo = Buff.imgoff;
     public static final Tex indframe = Resource.loadtex("gfx/hud/combat/indframe");
     public static final Coord indframeo = (indframe.sz().sub(32, 32)).div(2);
+    public static final Tex indbframe = Resource.loadtex("gfx/hud/combat/indbframe");
+    public static final Coord indbframeo = (indframe.sz().sub(32, 32)).div(2);
     public static final Tex useframe = Resource.loadtex("gfx/hud/combat/lastframe");
     public static final Coord useframeo = (useframe.sz().sub(32, 32)).div(2);
     public static final int actpitch = 50;
-    public final Indir<Resource>[] actions;
-    public final boolean[] dyn;
-    public int use = -1;
+    public final Action[] actions;
+    public int use = -1, useb = -1;
     public Coord pcc;
     public int pho;
     private Fightview fv;
@@ -57,6 +58,15 @@ public class Fightsess extends Widget {
     }};
     private Coord simpleOpeningSz = new Coord(32, 32);
 
+    public static class Action {
+        public final Indir<Resource> res;
+        public double cs, ct;
+
+        public Action(Indir<Resource> res) {
+            this.res = res;
+        }
+    }
+
     @RName("fsess")
     public static class $_ implements Factory {
         public Widget create(UI ui, Object[] args) {
@@ -68,8 +78,7 @@ public class Fightsess extends Widget {
     @SuppressWarnings("unchecked")
     public Fightsess(int nact) {
         pho = -40;
-        this.actions = (Indir<Resource>[]) new Indir[nact];
-        this.dyn = new boolean[nact];
+        this.actions = new Action[nact];
 
         for(int i = 0; i < 10; i++) {
             keystex[i] = Text.renderstroked(FightWnd.keys[i], Color.WHITE, Color.BLACK, Text.num12boldFnd).tex();
@@ -160,7 +169,7 @@ public class Fightsess extends Widget {
 
     public void draw(GOut g) {
         updatepos();
-        double now = System.currentTimeMillis() / 1000.0;
+        double now = Utils.rtime();
 
         GameUI gui = gameui();
         int gcx = gui.sz.x / 2;
@@ -186,13 +195,12 @@ public class Fightsess extends Widget {
         {
             Coord cdc = Config.altfightui ? new Coord(gcx, 200) : pcc.add(cmc);
             if (now < fv.atkct) {
-                double cd = fv.atkct - now;
                 double a = (now - fv.atkcs) / (fv.atkct - fv.atkcs);
                 g.chcolor(255, 0, 128, 224);
                 g.fellipse(cdc, Config.altfightui ? new Coord(24, 24) : new Coord(22, 22), Math.PI / 2 - (Math.PI * 2 * Math.min(1.0 - a, 1.0)), Math.PI / 2);
                 g.chcolor();
                 if (Config.showcooldown)
-                    g.atextstroked(Utils.fmt1DecPlace(cd), cdc, 0.5, 0.5, Color.WHITE, Color.BLACK, Text.num11Fnd);
+                    g.atextstroked(Utils.fmt1DecPlace(fv.atkct - now), cdc, 0.5, 0.5, Color.WHITE, Color.BLACK, Text.num11Fnd);
             }
             g.image(cdframe, Config.altfightui ? new Coord(gameui().sz.x / 2, 200).sub(cdframe.sz().div(2)) : cdc.sub(cdframe.sz().div(2)));
         }
@@ -203,13 +211,13 @@ public class Fightsess extends Widget {
                 this.lastact1 = lastact;
                 this.lastacttip1 = null;
             }
-            long lastuse = fv.lastuse;
+            double lastuse = fv.lastuse;
             if (lastact != null) {
                 Tex ut = lastact.get().layer(Resource.imgc).tex();
                 Coord useul = Config.altfightui ? new Coord(gcx - 69, 120) : pcc.add(usec1).sub(ut.sz().div(2));
                 g.image(ut, useul);
                 g.image(useframe, useul.sub(useframeo));
-                double a = now - (lastuse / 1000.0);
+                double a = now - lastuse;
                 if (a < 1) {
                     Coord off = new Coord((int) (a * ut.sz().x / 2), (int) (a * ut.sz().y / 2));
                     g.chcolor(255, 255, 255, (int) (255 * (1 - a)));
@@ -227,13 +235,13 @@ public class Fightsess extends Widget {
                     this.lastact2 = lastact;
                     this.lastacttip2 = null;
                 }
-                long lastuse = fv.current.lastuse;
+                double lastuse = fv.current.lastuse;
                 if (lastact != null) {
                     Tex ut = lastact.get().layer(Resource.imgc).tex();
                     Coord useul = Config.altfightui ? new Coord(gcx + 69 - ut.sz().x, 120) : pcc.add(usec2).sub(ut.sz().div(2));
                     g.image(ut, useul);
                     g.image(useframe, useul.sub(useframeo));
-                    double a = now - (lastuse / 1000.0);
+                    double a = now - lastuse;
                     if (a < 1) {
                         Coord off = new Coord((int) (a * ut.sz().x / 2), (int) (a * ut.sz().y / 2));
                         g.chcolor(255, 255, 255, (int) (255 * (1 - a)));
@@ -245,28 +253,36 @@ public class Fightsess extends Widget {
             }
         }
 
-        for (int i = 0; i < actions.length; i++) {
+
+        for(int i = 0; i < actions.length; i++) {
             Coord ca = Config.altfightui ? new Coord(gcx - 18, gui.sz.y - 250).add(actc(i)).add(16, 16) : pcc.add(actc(i));
-            Indir<Resource> act = actions[i];
+            Action act = actions[i];
             try {
-                if (act != null) {
-                    Tex img = act.get().layer(Resource.imgc).tex();
-                    ca = ca.sub(img.sz().div(2));
-                    g.image(img, ca);
-                    if (i == use) {
-                        g.image(indframe, ca.sub(indframeo));
+                if(act != null) {
+                    Resource res = act.res.get();
+                    Tex img = res.layer(Resource.imgc).tex();
+                    Coord ic = ca.sub(img.sz().div(2));
+                    g.image(img, ic);
+                    if(now < act.ct) {
+                        double a = (now - act.cs) / (act.ct - act.cs);
+                        g.chcolor(0, 0, 0, 128);
+                        g.prect(ca, ic.sub(ca), ic.add(img.sz()).sub(ca), (1.0 - a) * Math.PI * 2);
+                        g.chcolor();
+                    }
+                    if(i == use) {
+                        g.image(indframe, ic.sub(indframeo));
+                    } else if (i == useb) {
+                        g.image(indbframe, ic.sub(indbframeo));
                     } else {
-                        g.image(actframe, ca.sub(actframeo));
+                        g.image(actframe, ic.sub(actframeo));
                     }
 
                     if (Config.combshowkeys) {
                         Tex key = Config.combatkeys == 0 ? keystex[i] : keysftex[i];
-                        g.image(key, ca.sub(indframeo).add(indframe.sz().x / 2 - key.sz().x / 2, indframe.sz().y - 6));
+                        g.image(key, ic.sub(indframeo).add(indframe.sz().x / 2 - key.sz().x / 2, indframe.sz().y - 6));
                     }
                 }
-            } catch (Loading l) {
-            }
-            ca.x += actpitch;
+            } catch(Loading l) {}
         }
     }
 
@@ -343,14 +359,12 @@ public class Fightsess extends Widget {
 
         for (int i = 0; i < actions.length; i++) {
             Coord ca = Config.altfightui ? new Coord(cx - 18, gameui().sz.y - 250).add(actc(i)).add(16, 16) : pcc.add(actc(i));
-            Indir<Resource> act = actions[i];
+            Indir<Resource> act = (actions[i] == null) ? null : actions[i].res;
             try {
                 if (act != null) {
                     Tex img = act.get().layer(Resource.imgc).tex();
                     ca = ca.sub(img.sz().div(2));
                     if (c.isect(ca, img.sz())) {
-                        if (dyn[i])
-                            return ("Combat discovery");
                         String tip = act.get().layer(Resource.tooltip).t + " ($b{$col[255,128,0]{" + keytips[i] + "}})";
                         if((acttip == null) || !acttip.text.equals(tip))
                             acttip = RichText.render(tip, -1);
@@ -359,7 +373,6 @@ public class Fightsess extends Widget {
                 }
             } catch (Loading l) {
             }
-            ca.x += actpitch;
         }
 
         try {
@@ -394,13 +407,18 @@ public class Fightsess extends Widget {
             int n = (Integer) args[0];
             if (args.length > 1) {
                 Indir<Resource> res = ui.sess.getres((Integer) args[1]);
-                actions[n] = res;
-                dyn[n] = ((Integer) args[2]) != 0;
+                actions[n] = new Action(res);
             } else {
                 actions[n] = null;
             }
+        } else if(msg == "acool") {
+            int n = (Integer)args[0];
+            double now = Utils.rtime();
+            actions[n].cs = now;
+            actions[n].ct = now + (((Number)args[1]).doubleValue() * 0.06);
         } else if (msg == "use") {
             this.use = (Integer) args[0];
+            this.useb = (args.length > 1) ? ((Integer)args[1]) : -1;
         } else if (msg == "used") {
         } else {
             super.uimsg(msg, args);
@@ -418,9 +436,10 @@ public class Fightsess extends Widget {
             return (true);
         }
 
+        int n = -1;
         if (Config.combatkeys == 0) {
             if ((key == 0) && (ev.getModifiersEx() & (InputEvent.CTRL_DOWN_MASK | KeyEvent.META_DOWN_MASK | KeyEvent.ALT_DOWN_MASK)) == 0) {
-                int n = -1;
+
                 switch(ev.getKeyCode()) {
                     case KeyEvent.VK_1: n = 0; break;
                     case KeyEvent.VK_2: n = 1; break;
@@ -430,14 +449,10 @@ public class Fightsess extends Widget {
                 }
                 if((n >= 0) && ((ev.getModifiersEx() & InputEvent.SHIFT_DOWN_MASK) != 0))
                     n += 5;
-                if((n >= 0) && (n < actions.length)) {
-                    wdgmsg("use", n);
-                    return(true);
-                }
             }
         } else { // F1-F5
             if (key == 0) {
-                int n = -1;
+
                 switch(ev.getKeyCode()) {
                     case KeyEvent.VK_1: n = 0; break;
                     case KeyEvent.VK_2: n = 1; break;
@@ -450,12 +465,27 @@ public class Fightsess extends Widget {
                     case KeyEvent.VK_F4: n = 8; break;
                     case KeyEvent.VK_F5: n = 9; break;
                 }
-                if((n >= 0) && (n < actions.length)) {
-                    wdgmsg("use", n);
-                    return(true);
-                }
             }
         }
+
+        int fn = n;
+        if ((n >= 0) && (n < actions.length)) {
+            MapView map = getparent(GameUI.class).map;
+            Coord mvc = map.rootxlate(ui.mc);
+            if (mvc.isect(Coord.z, map.sz)) {
+                map.delay(map.new Maptest(mvc) {
+                    protected void hit(Coord pc, Coord2d mc) {
+                        wdgmsg("use", fn, 1, ui.modflags(), mc.floor(OCache.posres));
+                    }
+
+                    protected void nohit(Coord pc) {
+                        wdgmsg("use", fn, 1, ui.modflags());
+                    }
+                });
+            }
+            return (true);
+        }
+
 
         return(super.globtype(key, ev));
     }

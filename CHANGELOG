@@ -1,3 +1,67 @@
+Version 1.67.0
+    Fixed:
+        * Troll belt.
+
+    Misc:
+        * Updated wound treatments lists.
+        * Allow selecting foregables for which to sound the 'aww yeah' alarm.
+
+
+Version 1.66.4
+    Fixed:
+        * Actions selected in the search window not being added to the craft history bar.
+        * Cooldown value in combat log.
+
+    Misc:
+        * Added treatments for nasty laceration.
+        * Don't show next button in the menu grid if not needed.
+        * Localization improvements.
+
+
+Version 1.66.3
+    Misc:
+        * Upstream code merge.
+
+
+Version 1.66.2
+    Fixed:
+        * Tracking toggle.
+
+    Misc:
+        * Upstream code merge.
+
+
+Version 1.66.1
+    Fixed:
+        * Timers.
+
+    Misc:
+        * Upstream code merge.
+
+
+Version 1.66.0
+    Misc:
+        * Upstream code merge.
+
+
+Version 1.65.5
+    Misc:
+        * Russian localization updates.
+        * Upstream code merge.
+
+
+Version 1.65.4
+    Fixed:
+        * Barter stands crash.
+
+
+Version 1.65.3
+    Misc:
+        * Russian localization updates.
+        * Korean localization updates.
+        * Synchronized with current server version.
+
+
 Version 1.65.2
     Misc:
         * Open containers while having an item on the cursor with alt+rmb.

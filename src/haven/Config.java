@@ -117,14 +117,12 @@ public class Config {
     public static boolean showanimalrad = Utils.getprefb("showanimalrad", true);
     public static boolean hwcursor = Utils.getprefb("hwcursor", false);
     public static boolean showboundingboxes = Utils.getprefb("showboundingboxes", false);
-    public static boolean alarmonforagables = Utils.getprefb("alarmonforagables", true);
     public static double alarmonforagablesvol = Utils.getprefd("alarmonforagablesvol", 0.8);
-    public static double alarmbearsvol = Utils.getprefd("alarmbearsvol", 0.8);
+    public static double alarmbearsvol = Utils.getprefd("alarmbearsvol", 0.7);
     public static boolean alarmlocres = Utils.getprefb("alarmlocres", false);
     public static double alarmlocresvol = Utils.getprefd("alarmlocresvol", 0.8);
     public static boolean alarmtroll = Utils.getprefb("alarmtroll", false);
     public static double alarmtrollvol = Utils.getprefd("alarmtrollvol", 0.8);
-    public static double alarmmammothvol = Utils.getprefd("alarmmammothvol", 0.8);
     public static boolean showcooldown = Utils.getprefb("showcooldown", false);
     public static boolean nodropping = Utils.getprefb("nodropping", false);
     public static boolean nodropping_all = Utils.getprefb("nodropping_all", false);
@@ -350,10 +348,16 @@ public class Config {
         put("gfx/kritter/nidbane/nidbane", Resource.loadtex("gfx/icons/spooky"));
     }};
 
-    public final static Set<String> foragables = new HashSet<String>(Arrays.asList(
-            "gfx/terobjs/herbs/flotsam", "gfx/terobjs/herbs/chimingbluebell", "gfx/terobjs/herbs/edelweiss",
-            "gfx/terobjs/herbs/bloatedbolete", "gfx/terobjs/herbs/glimmermoss", "gfx/terobjs/herbs/camomile",
-            "gfx/terobjs/herbs/clay-cave"));
+    public final static HashMap<String, CheckListboxItem> alarmitems = new HashMap<String, CheckListboxItem>(8) {{
+        put("gfx/terobjs/herbs/flotsam", new CheckListboxItem("Peculiar Flotsam"));
+        put("gfx/terobjs/herbs/chimingbluebell", new CheckListboxItem("Chiming Bluebell"));
+        put("gfx/terobjs/herbs/edelweiss", new CheckListboxItem("Edelweiß"));
+        put("gfx/terobjs/herbs/bloatedbolete", new CheckListboxItem("Bloated Bolete"));
+        put("gfx/terobjs/herbs/glimmermoss", new CheckListboxItem("Glimmermoss"));
+        put("gfx/terobjs/herbs/camomile", new CheckListboxItem("Camomile"));
+        put("gfx/terobjs/herbs/clay-cave", new CheckListboxItem("Cave Clay"));
+        put("gfx/terobjs/herbs/mandrake", new CheckListboxItem("Mandrake Root"));
+    }};
 
     public final static Set<String> locres = new HashSet<String>(Arrays.asList(
             "gfx/terobjs/saltbasin",
@@ -418,7 +422,7 @@ public class Config {
         put("/idle", new CheckListboxItem("Idle animals"));
     }};
 
-    public final static HashMap<String, String[]> cures = new HashMap<String, String[]>(18) {{
+    public final static HashMap<String, String[]> cures = new HashMap<String, String[]>(20) {{
         put("paginae/wound/antburn", new String[]{
                 "gfx/invobjs/herbs/yarrow"
         });
@@ -446,13 +450,15 @@ public class Config {
                 "gfx/invobjs/gauze",
                 "gfx/invobjs/stingingpoultice",
                 "gfx/invobjs/rootfill",
-                "gfx/invobjs/herbs/waybroad"
+                "gfx/invobjs/herbs/waybroad",
+                "gfx/invobjs/honeybroadaid"
         });
         put("paginae/wound/fellslash", new String[]{
                 "gfx/invobjs/gauze"
         });
         put("paginae/wound/nicksnknacks", new String[]{
-                "gfx/invobjs/herbs/yarrow"
+                "gfx/invobjs/herbs/yarrow",
+                "gfx/invobjs/honeybroadaid"
         });
         put("paginae/wound/punchsore", new String[]{
                 "gfx/invobjs/mudointment",
@@ -460,7 +466,8 @@ public class Config {
         });
         put("paginae/wound/scrapesncuts", new String[]{
                 "gfx/invobjs/herbs/yarrow",
-                "gfx/invobjs/mudointment"
+                "gfx/invobjs/mudointment",
+                "gfx/invobjs/honeybroadaid"
         });
         put("paginae/wound/severemauling", new String[]{
                 "gfx/invobjs/hartshornsalve"
@@ -481,6 +488,7 @@ public class Config {
         });
         put("paginae/wound/blackeye", new String[]{
                 "gfx/invobjs/hartshornsalve",
+                "gfx/invobjs/honeybroadaid",
                 "gfx/invobjs/toadbutter"
         });
         put("paginae/wound/bladekiss", new String[]{
@@ -495,12 +503,20 @@ public class Config {
                 "gfx/invobjs/soapbar",
                 "gfx/invobjs/opium"
         });
+        put("paginae/wound/nastylaceration", new String[]{
+                "gfx/invobjs/stitchpatch",
+                "gfx/invobjs/toadbutter"
+        });
+        put("paginae/wound/sealfinger", new String[]{
+                "gfx/invobjs/hartshornsalve"
+        });
     }};
 
     public static final Map<Long, Pair<String, String>> gridIdsMap = new HashMap<>(58000);
 
     static {
         Utils.loadprefchklist("disableanim", Config.disableanim);
+        Utils.loadprefchklist("alarmitems", Config.alarmitems);
 
         String p;
         if ((p = getprop("haven.authck", null)) != null)

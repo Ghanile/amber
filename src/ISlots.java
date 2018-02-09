@@ -1,6 +1,5 @@
 import haven.*;
 import haven.GItem.NumberInfo;
-import haven.GItem.GildingInfo;
 import haven.ItemInfo.Tip;
 
 import haven.CharWnd;
@@ -13,11 +12,11 @@ import haven.Resource;
 import haven.Text;
 import haven.Utils;
 
-import haven.Resource.Image;
 import haven.res.gfx.invobjs.gems.gemstone.Gemstone;
 import haven.res.lib.tspec.Spec;
 import haven.res.ui.tt.defn.DefName;
 
+import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.util.List;
 
@@ -26,7 +25,7 @@ import java.util.Collection;
 import java.util.Iterator;
 
 
-public class ISlots extends Tip implements NumberInfo, GildingInfo {
+public class ISlots extends Tip implements NumberInfo {
     public static final Text ch = Text.render(Resource.getLocString(Resource.BUNDLE_LABEL, "Gilding:"));
     public final Collection<SItem> s = new ArrayList<SItem>();
     public final int left;
@@ -99,8 +98,8 @@ public class ISlots extends Tip implements NumberInfo, GildingInfo {
         return this.s.size();
     }
 
-    public boolean hasGildableSlots() {
-        return left > 0;
+    public Color numcolor() {
+        return left > 0 ? new Color(0, 169, 224) : Color.WHITE;
     }
 
     public static class SItem {
@@ -112,11 +111,11 @@ public class ISlots extends Tip implements NumberInfo, GildingInfo {
 
         public SItem(ISlots var1, ResData var2, Object[] var3) {
             this.islots = var1;
-            this.res = var2.res.get();
-            Spec var4 = new Spec(var2, var1.owner.glob(), Utils.extend(new Object[]{ISlots.defn}, var3));
+            this.res = (Resource)var2.res.get();
+            Spec var4 = new Spec(var2, var1.owner, Utils.extend(new Object[]{ISlots.defn}, var3));
             this.spr = var4.spr();
             this.name = var4.name();
-            Spec var5 = new Spec(var2, var1.owner.glob(), var3);
+            Spec var5 = new Spec(var2, var1.owner, var3);
             this.info = var5.info();
         }
 

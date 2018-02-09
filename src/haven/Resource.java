@@ -35,6 +35,7 @@ import java.nio.charset.CodingErrorAction;
 import java.util.*;
 import java.net.*;
 import java.io.*;
+import java.security.*;
 import javax.imageio.*;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
@@ -44,10 +45,8 @@ public class Resource implements Serializable {
     public static ThreadGroup loadergroup = null;
     private static Map<String, LayerFactory<?>> ltypes = new TreeMap<String, LayerFactory<?>>();
     public static Class<Image> imgc = Image.class;
-    public static Class<Tile> tile = Tile.class;
     public static Class<Neg> negc = Neg.class;
     public static Class<Anim> animc = Anim.class;
-    public static Class<Tileset> tileset = Tileset.class;
     public static Class<Pagina> pagina = Pagina.class;
     public static Class<AButton> action = AButton.class;
     public static Class<Audio> audio = Audio.class;
@@ -390,6 +389,10 @@ public class Resource implements Serializable {
                     done();
                 }
             }
+
+            public String toString() {
+                return(String.format("<q:%s(v%d)>", name, ver));
+            }
         }
 
         private void handle(Queued res) {
@@ -511,7 +514,7 @@ public class Resource implements Serializable {
             synchronized (loaders) {
                 while (loaders.size() < Math.min(nloaders, qsz)) {
                     final Loader n = new Loader();
-                    Thread th = java.security.AccessController.doPrivileged(new java.security.PrivilegedAction<Thread>() {
+                    Thread th = AccessController.doPrivileged(new PrivilegedAction<Thread>() {
                         public Thread run() {
                             return (new HackThread(loadergroup, n, "Haven resource loader"));
                         }
@@ -946,37 +949,6 @@ public class Resource implements Serializable {
         }
     }
 
-    @LayerName("tile")
-    public class Tile extends Layer {
-        transient BufferedImage img;
-        transient private Tex tex;
-        public final int id;
-        public final int w;
-        public final char t;
-
-        public Tile(Message buf) {
-            t = (char) buf.uint8();
-            id = buf.uint8();
-            w = buf.uint16();
-            try {
-                img = ImageIO.read(new MessageInputStream(buf));
-            } catch (IOException e) {
-                throw (new LoadException(e, Resource.this));
-            }
-            if (img == null)
-                throw (new LoadException("Invalid image data in " + name, Resource.this));
-        }
-
-        public synchronized Tex tex() {
-            if (tex == null)
-                tex = new TexI(img);
-            return (tex);
-        }
-
-        public void init() {
-        }
-    }
-
     @LayerName("neg")
     public class Neg extends Layer {
         public Coord cc;
@@ -1028,195 +1000,6 @@ public class Resource implements Serializable {
                 }
                 f[i] = buf.toArray(typeinfo);
             }
-        }
-    }
-
-    @LayerName("tileset2")
-    public class Tileset extends Layer {
-        private String tn = "gnd";
-        public String[] tags = {};
-        public Object[] ta = new Object[0];
-        private transient Tiler.Factory tfac;
-        public WeightList<Indir<Resource>> flavobjs = new WeightList<Indir<Resource>>();
-        public WeightList<Tile> ground;
-        public WeightList<Tile>[] ctrans, btrans;
-        public int flavprob;
-
-        private Tileset() {
-        }
-
-        public Tileset(Message buf) {
-            while (!buf.eom()) {
-                int p = buf.uint8();
-                switch (p) {
-                    case 0:
-                        tn = buf.string();
-                        ta = buf.list();
-                        break;
-                    case 1:
-                        int flnum = buf.uint16();
-                        flavprob = buf.uint16();
-                        for (int i = 0; i < flnum; i++) {
-                            String fln = buf.string();
-                            int flv = buf.uint16();
-                            int flw = buf.uint8();
-                            try {
-                                flavobjs.add(pool.load(fln, flv), flw);
-                            } catch (RuntimeException e) {
-                                throw (new LoadException("Illegal resource dependency", e, Resource.this));
-                            }
-                        }
-                        break;
-                    case 2:
-                        tags = new String[buf.int8()];
-                        for (int i = 0; i < tags.length; i++)
-                            tags[i] = buf.string();
-                        Arrays.sort(tags);
-                        break;
-                    default:
-                        throw (new LoadException("Invalid tileset part " + p + "  in " + name, Resource.this));
-                }
-            }
-        }
-
-        public Tiler.Factory tfac() {
-            synchronized (this) {
-                if (tfac == null) {
-                    CodeEntry ent = layer(CodeEntry.class);
-                    if (ent != null) {
-                        tfac = ent.get(Tiler.Factory.class);
-                    } else {
-                        if ((tfac = Tiler.byname(tn)) == null)
-                            throw (new RuntimeException("Invalid tiler name in " + Resource.this.name + ": " + tn));
-                    }
-                }
-                return (tfac);
-            }
-        }
-
-        private void packtiles(Collection<Tile> tiles, Coord tsz) {
-            if (tiles.size() < 1)
-                return;
-            int min = -1, minw = -1, minh = -1, mine = -1;
-            final int nt = tiles.size();
-            for (int i = 1; i <= nt; i++) {
-                int w = Tex.nextp2(tsz.x * i);
-                int h;
-                if ((nt % i) == 0)
-                    h = nt / i;
-                else
-                    h = (nt / i) + 1;
-                h = Tex.nextp2(tsz.y * h);
-                int a = w * h;
-                int e = (w < h) ? h : w;
-                if ((min == -1) || (a < min) || ((a == min) && (e < mine))) {
-                    min = a;
-                    minw = w;
-                    minh = h;
-                    mine = e;
-                }
-            }
-            final Tile[] order = new Tile[nt];
-            final Coord[] place = new Coord[nt];
-            Tex packbuf = new TexL(new Coord(minw, minh)) {
-                {
-                    mipmap(Mipmapper.avg);
-                    minfilter(javax.media.opengl.GL2.GL_NEAREST_MIPMAP_LINEAR);
-                    centroid = true;
-                }
-
-                public BufferedImage fill() {
-                    BufferedImage buf = TexI.mkbuf(dim);
-                    Graphics g = buf.createGraphics();
-                    for (int i = 0; i < nt; i++)
-                        g.drawImage(order[i].img, place[i].x, place[i].y, null);
-                    g.dispose();
-                    return (buf);
-                }
-
-                public String toString() {
-                    return ("TileTex(" + Resource.this.name + ")");
-                }
-
-                public String loadname() {
-                    return ("tileset in " + Resource.this.name);
-                }
-            };
-            int x = 0, y = 0, n = 0;
-            for (Tile t : tiles) {
-                if (y >= minh)
-                    throw (new LoadException("Could not pack tiles into calculated minimum texture", Resource.this));
-                order[n] = t;
-                place[n] = new Coord(x, y);
-                t.tex = new TexSI(packbuf, place[n], tsz);
-                n++;
-                if ((x += tsz.x) > (minw - tsz.x)) {
-                    x = 0;
-                    y += tsz.y;
-                }
-            }
-        }
-
-        @SuppressWarnings("unchecked")
-        public void init() {
-            WeightList<Tile> ground = new WeightList<Tile>();
-            WeightList<Tile>[] ctrans = new WeightList[15];
-            WeightList<Tile>[] btrans = new WeightList[15];
-            for (int i = 0; i < 15; i++) {
-                ctrans[i] = new WeightList<Tile>();
-                btrans[i] = new WeightList<Tile>();
-            }
-            int cn = 0, bn = 0;
-            Collection<Tile> tiles = new LinkedList<Tile>();
-            Coord tsz = null;
-            for (Tile t : layers(Tile.class)) {
-                if (t.t == 'g') {
-                    ground.add(t, t.w);
-                } else if (t.t == 'b') {
-                    btrans[t.id - 1].add(t, t.w);
-                    bn++;
-                } else if (t.t == 'c') {
-                    ctrans[t.id - 1].add(t, t.w);
-                    cn++;
-                }
-                tiles.add(t);
-                if (tsz == null) {
-                    tsz = Utils.imgsz(t.img);
-                } else {
-                    if (!Utils.imgsz(t.img).equals(tsz)) {
-                        throw (new LoadException("Different tile sizes within set", Resource.this));
-                    }
-                }
-            }
-            if (ground.size() > 0)
-                this.ground = ground;
-            if (cn > 0)
-                this.ctrans = ctrans;
-            if (bn > 0)
-                this.btrans = btrans;
-            packtiles(tiles, tsz);
-        }
-    }
-
-    /* Only for backwards compatibility */
-    @LayerName("tileset")
-    public static class OrigTileset implements LayerFactory<Tileset> {
-        public Tileset cons(Resource res, Message buf) {
-            Tileset ret = res.new Tileset();
-            int fl = buf.uint8();
-            int flnum = buf.uint16();
-            ret.flavprob = buf.uint16();
-            for (int i = 0; i < flnum; i++) {
-                String fln = buf.string();
-                int flv = buf.uint16();
-                int flw = buf.uint8();
-                try {
-                    ret.flavobjs.add(res.pool.load(fln, flv), flw);
-                } catch (RuntimeException e) {
-                    throw (new LoadException("Illegal resource dependency", e, res));
-                }
-            }
-            return (ret);
         }
     }
 
@@ -1311,7 +1094,7 @@ public class Resource implements Serializable {
     ;
 
     public static Resource classres(final Class<?> cl) {
-        return (java.security.AccessController.doPrivileged(new java.security.PrivilegedAction<Resource>() {
+        return(AccessController.doPrivileged(new PrivilegedAction<Resource>() {
             public Resource run() {
                 ClassLoader l = cl.getClassLoader();
                 if (l instanceof ResClassLoader)
@@ -1393,7 +1176,7 @@ public class Resource implements Serializable {
         public ClassLoader loader(final boolean wait) {
             synchronized (CodeEntry.this) {
                 if (this.loader == null) {
-                    this.loader = java.security.AccessController.doPrivileged(new java.security.PrivilegedAction<ClassLoader>() {
+                    this.loader = AccessController.doPrivileged(new PrivilegedAction<ClassLoader>() {
                         public ClassLoader run() {
                             ClassLoader ret = Resource.class.getClassLoader();
                             if (classpath.size() > 0) {
@@ -1473,31 +1256,32 @@ public class Resource implements Serializable {
                     return (null);
                 }
             }
-            try {
-                synchronized (ipe) {
-                    Object pinst;
-                    if ((pinst = ipe.get(acl)) != null) {
-                        return (cl.cast(pinst));
-                    } else {
-                        T inst;
-                        Object rinst;
-                        if (entry.instancer() != PublishedCode.Instancer.class)
-                            rinst = entry.instancer().newInstance().make(acl);
-                        else
-                            rinst = acl.newInstance();
+            synchronized (ipe) {
+                Object pinst;
+                if ((pinst = ipe.get(acl)) != null) {
+                    return (cl.cast(pinst));
+                } else {
+                    T inst;
+                    Object rinst = AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
                         try {
-                            inst = cl.cast(rinst);
-                        } catch (ClassCastException e) {
-                            throw (new ClassCastException("Published class in " + Resource.this.name + " is not of type " + cl));
+                            if (entry.instancer() != PublishedCode.Instancer.class)
+                                return (entry.instancer().newInstance().make(acl));
+                            else
+                                return (acl.newInstance());
+                        } catch (IllegalAccessException e) {
+                            throw (new RuntimeException(e));
+                        } catch (InstantiationException e) {
+                            throw (new RuntimeException(e));
                         }
-                        ipe.put(acl, inst);
-                        return (inst);
+                    });
+                    try {
+                        inst = cl.cast(rinst);
+                    } catch (ClassCastException e) {
+                        throw (new ClassCastException("Published class in " + Resource.this.name + " is not of type " + cl));
                     }
+                    ipe.put(acl, inst);
+                    return (inst);
                 }
-            } catch (InstantiationException e) {
-                throw (new RuntimeException(e));
-            } catch (IllegalAccessException e) {
-                throw (new RuntimeException(e));
             }
         }
 
@@ -1611,44 +1395,9 @@ public class Resource implements Serializable {
 
     public <L extends Layer> Collection<L> layers(final Class<L> cl) {
         used = true;
-        return (new AbstractCollection<L>() {
-            public int size() {
-                int s = 0;
-                for (L l : this)
-                    s++;
-                return (s);
-            }
-
+        return(new DefaultCollection<L>() {
             public Iterator<L> iterator() {
-                return (new Iterator<L>() {
-                    Iterator<Layer> i = layers.iterator();
-                    L c = n();
-
-                    private L n() {
-                        while (i.hasNext()) {
-                            Layer l = i.next();
-                            if (cl.isInstance(l))
-                                return (cl.cast(l));
-                        }
-                        return (null);
-                    }
-
-                    public boolean hasNext() {
-                        return (c != null);
-                    }
-
-                    public L next() {
-                        L ret = c;
-                        if (ret == null)
-                            throw (new NoSuchElementException());
-                        c = n();
-                        return (ret);
-                    }
-
-                    public void remove() {
-                        throw (new UnsupportedOperationException());
-                    }
-                });
+                return(Utils.filter(layers.iterator(), cl));
             }
         });
     }
@@ -1724,7 +1473,7 @@ public class Resource implements Serializable {
             }
 
             public String toString() {
-                return (name);
+                return String.format("<indir:%s(v%d)>", name, ver);
             }
         }
         indir = new Ret(name, ver);
@@ -1874,13 +1623,16 @@ public class Resource implements Serializable {
             "%s has invited you to join his party. Do you wish to do so?",
             "%s has requested to spar with you. Do you accept?",
             "Experience points gained: %s",
-            "Here lies %s"
+            "Here lies %s",
+            "Create a level %d artifact"
     };
 
     private static final String[] fmtLocStringsFlower = new String[]{
             "Gild (%s%% chance)",
             "Follow %s",
-            "Travel along %s"
+            "Travel along %s",
+            "Connect %s",
+            "Extend %s"
     };
 
     private static final String[] fmtLocStringsMsg = new String[]{
@@ -1930,8 +1682,13 @@ public class Resource implements Serializable {
         String ll = map.get(s);
         if (ll != null) {
             int vi = s.indexOf("%s");
-            if (key.startsWith(s.substring(0, vi)) && key.endsWith(s.substring(vi + 2)))
-                return String.format(ll, key.substring(vi, key.length() - (s.length() - vi - 2)));
+
+            String sufix = s.substring(vi + 2);
+            if (sufix.startsWith("%%"))                // fix for strings with escaped percentage sign
+                sufix = sufix.substring(1);
+
+            if (key.startsWith(s.substring(0, vi)) && key.endsWith(sufix))
+                return String.format(ll, key.substring(vi, key.length() - sufix.length()));
         }
         return null;
     }
