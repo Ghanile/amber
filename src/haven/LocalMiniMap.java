@@ -53,8 +53,10 @@ public class LocalMiniMap extends Widget {
     private static final Resource bearsfx = Resource.local().loadwait("sfx/bear");
     private static final Resource lynxfx = Resource.local().loadwait("sfx/lynx");
     private static final Resource walrusfx = Resource.local().loadwait("sfx/walrus");
+    private static final Resource sealsfx = Resource.local().loadwait("sfx/seal");
     private static final Resource trollsfx = Resource.local().loadwait("sfx/troll");
     private static final Resource mammothsfx = Resource.local().loadwait("sfx/mammoth");
+    private static final Resource eaglesfx = Resource.local().loadwait("sfx/eagle");
     private static final Resource doomedsfx = Resource.local().loadwait("sfx/doomed");
     private static final Resource swagsfx = Resource.local().loadwait("sfx/swag");
 	private final HashSet<Long> sgobs = new HashSet<Long>();
@@ -185,31 +187,34 @@ public class LocalMiniMap extends Widget {
         OCache oc = ui.sess.glob.oc;
         List<Gob> dangergobs = new ArrayList<Gob>();
         synchronized (oc) {
+            Gob player = mv.player();
             for (Gob gob : oc) {
                 try {
                     Resource res = gob.getres();
                     if (res == null)
                         continue;
 
+                    String basename = res.basename();
                     GobIcon icon = gob.getattr(GobIcon.class);
                     if (icon != null || Config.additonalicons.containsKey(res.name)) {
                         if (Gob.Type.MOB.has(gob.type) || gob.type == Gob.Type.BAT) {
-                            dangergobs.add(gob);
-                            continue;
+                            dangergobs.add(0, gob);
+                        } else {
+                            CheckListboxItem itm = Config.icons.get(basename);
+                            if (itm == null || !itm.selected) {
+                                Tex tex;
+                                if (icon != null)
+                                    tex = gob.knocked == Boolean.TRUE ? icon.texgrey() : icon.tex();
+                                else
+                                    tex = Config.additonalicons.get(res.name);
+                                g.image(tex, p2c(gob.rc).sub(tex.sz().div(2)).add(delta));
+                            }
                         }
-
-                        CheckListboxItem itm = Config.icons.get(res.basename());
-                        if (itm == null || !itm.selected) {
-                            Tex tex;
-                            if (icon != null)
-                                tex = gob.knocked == Boolean.TRUE ? icon.texgrey() : icon.tex();
-                            else
-                                tex = Config.additonalicons.get(res.name);
-                            g.image(tex, p2c(gob.rc).sub(tex.sz().div(2)).add(delta));
-                        }
+                    } else if (gob.type == Gob.Type.PLAYER && player != null && gob.id != player.id) {
+                        dangergobs.add(gob);
+                        continue;
                     }
 
-                    String basename = res.basename();
                     if (gob.type == Gob.Type.BOULDER) {
                         CheckListboxItem itm = Config.boulders.get(basename.substring(0, basename.length() - 1));
                         if (itm != null && itm.selected)
@@ -223,32 +228,48 @@ public class LocalMiniMap extends Widget {
                         if (itm != null && itm.selected)
                             g.image(treeicn, p2c(gob.rc).add(delta).sub(treeicn.sz().div(2)));
                     }
+
+                    if (sgobs.contains(gob.id))
+                        continue;
+
+                    if (gob.type == Gob.Type.FU_YE_CURIO) {
+                        sgobs.add(gob.id);
+                        Audio.play(foragablesfx, Config.alarmonforagablesvol);
+                    } else if (Config.alarmlocres && gob.type == Gob.Type.LOC_RESOURCE) {
+                        sgobs.add(gob.id);
+                        Audio.play(swagsfx, Config.alarmlocresvol);
+                    } else if (gob.type == Gob.Type.BEAR && gob.knocked == Boolean.FALSE) {
+                        sgobs.add(gob.id);
+                        Audio.play(bearsfx, 0.7);
+                    } else if (gob.type == Gob.Type.LYNX && gob.knocked == Boolean.FALSE) {
+                        sgobs.add(gob.id);
+                        Audio.play(lynxfx, 0.8);
+                    } else if (gob.type == Gob.Type.WALRUS && gob.knocked == Boolean.FALSE) {
+                        sgobs.add(gob.id);
+                        Audio.play(walrusfx, 0.7);
+                    } else if (gob.type == Gob.Type.SEAL && gob.knocked == Boolean.FALSE) {
+                        sgobs.add(gob.id);
+                        Audio.play(sealsfx, 0.8);
+                    } else if (gob.type == Gob.Type.TROLL && gob.knocked == Boolean.FALSE && Config.alarmtroll) {
+                        sgobs.add(gob.id);
+                        Audio.play(trollsfx, Config.alarmtrollvol);
+                    } else if (gob.type == Gob.Type.MAMMOTH && gob.knocked == Boolean.FALSE) {
+                        sgobs.add(gob.id);
+                        Audio.play(mammothsfx, 0.7);
+                    } else if (gob.type == Gob.Type.EAGLE && gob.knocked == Boolean.FALSE) {
+                        sgobs.add(gob.id);
+                        Audio.play(eaglesfx);
+                    } else if (Config.alarmbram && gob.type == Gob.Type.SIEGE_MACHINE) {
+                        sgobs.add(gob.id);
+                        Audio.play(doomedsfx, Config.alarmbramvol);
+                    }
                 } catch (Loading l) {
                 }
             }
 
             for (Gob gob : dangergobs) {
                 try {
-                    GobIcon icon = gob.getattr(GobIcon.class);
-                    if (icon != null) {
-                        Tex tex;
-                        if (icon != null)
-                            tex = gob.knocked == Boolean.TRUE ? icon.texgrey() : icon.tex();
-                        else
-                            tex = Config.additonalicons.get(gob.getres().name);
-                        g.image(tex, p2c(gob.rc).sub(tex.sz().div(2)).add(delta));
-                    }
-                } catch (Loading l) {
-                }
-            }
-            
-            for (Gob gob : oc) {
-                try {
-                    Resource res = gob.getres();
-                    if (res == null)
-                        continue;
-
-                    if (gob.type == Gob.Type.PLAYER && gob.id != mv.player().id) {
+                    if (gob.type == Gob.Type.PLAYER) {
                         if (ui.sess.glob.party.memb.containsKey(gob.id))
                             continue;
 
@@ -281,39 +302,18 @@ public class LocalMiniMap extends Widget {
                             gameui().act("lo");
                         else if (Config.autohearth && enemy)
                             gameui().act("travel", "hearth");
-
-                        continue;
+                    } else {
+                        GobIcon icon = gob.getattr(GobIcon.class);
+                        if (icon != null) {
+                            Tex tex;
+                            if (icon != null)
+                                tex = gob.knocked == Boolean.TRUE ? icon.texgrey() : icon.tex();
+                            else
+                                tex = Config.additonalicons.get(gob.getres().name);
+                            g.image(tex, p2c(gob.rc).sub(tex.sz().div(2)).add(delta));
+                        }
                     }
-
-                    if (sgobs.contains(gob.id))
-                        continue;
-
-                    if (gob.type == Gob.Type.FU_YE_CURIO) {
-                        sgobs.add(gob.id);
-                        Audio.play(foragablesfx, Config.alarmonforagablesvol);
-                    } else if (Config.alarmlocres && gob.type == Gob.Type.LOC_RESOURCE) {
-                        sgobs.add(gob.id);
-                        Audio.play(swagsfx, Config.alarmlocresvol);
-                    } else if (gob.type == Gob.Type.BEAR && gob.knocked == Boolean.FALSE) {
-                        sgobs.add(gob.id);
-                        Audio.play(bearsfx, Config.alarmbearsvol);
-                    } else if (gob.type == Gob.Type.LYNX && gob.knocked == Boolean.FALSE) {
-                        sgobs.add(gob.id);
-                        Audio.play(lynxfx, Config.alarmbearsvol);
-                    } else if (gob.type == Gob.Type.WALRUS && gob.knocked == Boolean.FALSE) {
-                        sgobs.add(gob.id);
-                        Audio.play(walrusfx, Config.alarmbearsvol);
-                    } else if (gob.type == Gob.Type.TROLL && gob.knocked == Boolean.FALSE && Config.alarmtroll) {
-                        sgobs.add(gob.id);
-                        Audio.play(trollsfx, Config.alarmtrollvol);
-                    } else if (gob.type == Gob.Type.MAMMOTH && gob.knocked == Boolean.FALSE) {
-                        sgobs.add(gob.id);
-                        Audio.play(mammothsfx, Config.alarmbearsvol);
-                    } else if (Config.alarmbram && gob.type == Gob.Type.SIEGE_MACHINE) {
-                        sgobs.add(gob.id);
-                        Audio.play(doomedsfx, Config.alarmbramvol);
-                    }
-                } catch (Exception e) { // fail silently
+                } catch (Loading l) {
                 }
             }
         }

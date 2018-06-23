@@ -667,9 +667,6 @@ public class GameUI extends ConsoleHost implements Console.Directory {
                     destroy();
                 }
             };
-            if (Config.noquests)
-                questpanel.hide();
-
             add(questpanel);
         } else if (place == "misc") {
             Coord c;
@@ -997,6 +994,9 @@ public class GameUI extends ConsoleHost implements Console.Directory {
         if (key == ':') {
             entercmd();
             return (true);
+        } else if((Config.screenurl != null) && (Character.toUpperCase(key) == 'S') && ((ev.getModifiersEx() & (KeyEvent.META_DOWN_MASK | KeyEvent.ALT_DOWN_MASK)) != 0)) {
+            Screenshooter.take(this, Config.screenurl);
+            return(true);
         } else if (key == 3) {
             if (chat.visible && !chat.hasfocus) {
                 setfocus(chat);
@@ -1009,6 +1009,7 @@ public class GameUI extends ConsoleHost implements Console.Directory {
                 }
             }
             Utils.setprefb("chatvis", chat.targeth != 0);
+            return true;
         } else if ((key == 27) && (map != null) && !map.hasfocus) {
             setfocus(map);
             return (true);
@@ -1037,7 +1038,7 @@ public class GameUI extends ConsoleHost implements Console.Directory {
             quickslots.drop(QuickSlotsWdg.rc, Coord.z);
             quickslots.simulateclick(QuickSlotsWdg.rc);
             return true;
-        } else if (ev.isAltDown() && ev.getKeyCode() == KeyEvent.VK_S) {
+        } else if (ev.isControlDown() && ev.getKeyCode() == KeyEvent.VK_S) {
             HavenPanel.needtotakescreenshot = true;
             return true;
         } else if (ev.isControlDown() && ev.getKeyCode() == KeyEvent.VK_H) {
@@ -1319,8 +1320,12 @@ public class GameUI extends ConsoleHost implements Console.Directory {
                 Coord c = beltc(i);
                 g.image(invsq, beltc(i));
                 try {
-                    if (belt[slot] != null)
-                        g.image(belt[slot].get().layer(Resource.imgc).tex(), c.add(1, 1));
+                    if (belt[slot] != null) {
+                        Resource.Image img = belt[slot].get().layer(Resource.imgc);
+                        if (img == null)
+                            throw (new NullPointerException("No image in " + belt[slot].get().name));
+                        g.image(img.tex(), c.add(1, 1));
+                    }
                 } catch (Loading e) {
                 }
                 g.chcolor(FBelt.keysClr);
@@ -1403,7 +1408,15 @@ public class GameUI extends ConsoleHost implements Console.Directory {
                 Utils.setpref("mapfile/" + chrid, args[1]);
             }
         });
-        cmdmap.put("tool", (cons, args) -> add(gettype(args[1]).create(ui, new Object[0]), 200, 200));
+        cmdmap.put("tool", new Console.Command() {
+            public void run(Console cons, String[] args) {
+                try {
+                    add(gettype(args[1]).create(ui, new Object[0]), 200, 200);
+                } catch(RuntimeException e) {
+                    e.printStackTrace(Debug.log);
+                }
+            }
+        });
         cmdmap.put("help", (cons, args) -> {
             cons.out.println("Available console commands:");
             cons.findcmds().forEach((s, cmd) -> cons.out.println(s));

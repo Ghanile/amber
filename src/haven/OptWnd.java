@@ -264,17 +264,6 @@ public class OptWnd extends Window {
                         a = val;
                     }
                 });
-                appender.add(new CheckBox("Simple foragables (req. logout)") {
-                    {
-                        a = Config.simpleforage;
-                    }
-
-                    public void set(boolean val) {
-                        Utils.setprefb("simpleforage", val);
-                        Config.simpleforage = val;
-                        a = val;
-                    }
-                });
                 appender.add(new CheckBox("Hide crops") {
                     {
                         a = Config.hidecrops;
@@ -597,17 +586,6 @@ public class OptWnd extends Window {
                 a = val;
             }
         });
-        appender.add(new CheckBox("Show wear bars") {
-            {
-                a = Config.showwearbars;
-            }
-
-            public void set(boolean val) {
-                Utils.setprefb("showwearbars", val);
-                Config.showwearbars = val;
-                a = val;
-            }
-        });
         appender.add(new CheckBox("Show animal radius") {
             {
                 a = Config.showanimalrad;
@@ -875,7 +853,7 @@ public class OptWnd extends Window {
         appender.setVerticalMargin(VERTICAL_MARGIN);
         appender.setHorizontalMargin(HORIZONTAL_MARGIN);
 
-        appender.add(new CheckBox("Display damage received by opponents") {
+        appender.add(new CheckBox("Display damage") {
             {
                 a = Config.showdmgop;
             }
@@ -883,17 +861,6 @@ public class OptWnd extends Window {
             public void set(boolean val) {
                 Utils.setprefb("showdmgop", val);
                 Config.showdmgop = val;
-                a = val;
-            }
-        });
-        appender.add(new CheckBox("Display damage received by me") {
-            {
-                a = Config.showdmgmy;
-            }
-
-            public void set(boolean val) {
-                Utils.setprefb("showdmgmy", val);
-                Config.showdmgmy = val;
                 a = val;
             }
         });
@@ -930,17 +897,6 @@ public class OptWnd extends Window {
                 a = val;
             }
         });
-        /*appender.add(new CheckBox("Show attack cooldown delta") {
-            {
-                a = Config.showcddelta;
-            }
-
-            public void set(boolean val) {
-                Utils.setprefb("showcddelta", val);
-                Config.showcddelta = val;
-                a = val;
-            }
-        });*/
         appender.add(new CheckBox("Log combat actions to system log") {
             {
                 a = Config.logcombatactions;
@@ -1182,24 +1138,6 @@ public class OptWnd extends Window {
             public void set(boolean val) {
                 Utils.setprefb("showinvonlogin", val);
                 Config.showinvonlogin = val;
-                a = val;
-            }
-        });
-        appender.add(new CheckBox("Hide quests panel") {
-            {
-                a = Config.noquests;
-            }
-
-            public void set(boolean val) {
-                Utils.setprefb("noquests", val);
-                Config.noquests = val;
-                try {
-                    if (val)
-                        gameui().questpanel.hide();
-                    else
-                        gameui().questpanel.show();
-                } catch (NullPointerException npe) { // ignored
-                }
                 a = val;
             }
         });
@@ -1565,21 +1503,6 @@ public class OptWnd extends Window {
             }
         });
         appender.setVerticalMargin(0);
-        appender.add(new Label("Alarm on bears, lynx, mammoths"));
-        appender.setVerticalMargin(VERTICAL_AUDIO_MARGIN);
-        appender.add(new HSlider(200, 0, 1000, 0) {
-            protected void attach(UI ui) {
-                super.attach(ui);
-                val = (int) (Config.alarmbearsvol * 1000);
-            }
-
-            public void changed() {
-                double vol = val / 1000.0;
-                Config.alarmbearsvol = vol;
-                Utils.setprefd("alarmbearsvol", vol);
-            }
-        });
-        appender.setVerticalMargin(0);
         appender.add(new CheckBox("Alarm on localized resources") {
             {
                 a = Config.alarmlocres;
@@ -1727,7 +1650,8 @@ public class OptWnd extends Window {
 
     private static final Pair[] combatkeys = new Pair[]{
             new Pair<>("[1-5] and [shift + 1-5]", 0),
-            new Pair<>("[1-5] and [F1-F5]", 1)
+            new Pair<>("[1-5] and [F1-F5]", 1),
+            new Pair<>("[F1-F10]", 2)
     };
 
     @SuppressWarnings("unchecked")

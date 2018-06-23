@@ -47,6 +47,7 @@ import java.nio.*;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.IntPredicate;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.prefs.Preferences;
 
@@ -533,18 +534,15 @@ public class Utils {
                 yb = (word & 0x003fc000) >> 14, ys = ((word & 0x00400000) >> 22) & 1,
                 zb = (word & 0x00001fd0) >> 5, zs = ((word & 0x00002000) >> 13) & 1;
         int me = (word & 0x1f) - 15;
-        int xe = Integer.numberOfLeadingZeros(xb),
-                ye = Integer.numberOfLeadingZeros(yb),
-                ze = Integer.numberOfLeadingZeros(zb);
+        int xe = Integer.numberOfLeadingZeros(xb) - 24,
+                ye = Integer.numberOfLeadingZeros(yb) - 24,
+                ze = Integer.numberOfLeadingZeros(zb) - 24;
         if (xe == 32) ret[0] = 0;
-        else
-            ret[0] = Float.intBitsToFloat((xs << 31) | ((me - (xe - 24) + 126) << 23) | ((xb << (xe - 8)) & 0x007fffff));
+        else ret[0] = Float.intBitsToFloat((xs << 31) | ((me - xe + 127) << 23) | ((xb << (xe + 16)) & 0x007fffff));
         if (ye == 32) ret[1] = 0;
-        else
-            ret[1] = Float.intBitsToFloat((ys << 31) | ((me - (ye - 24) + 126) << 23) | ((yb << (ye - 8)) & 0x007fffff));
+        else ret[1] = Float.intBitsToFloat((ys << 31) | ((me - ye + 127) << 23) | ((yb << (ye + 16)) & 0x007fffff));
         if (ze == 32) ret[2] = 0;
-        else
-            ret[2] = Float.intBitsToFloat((zs << 31) | ((me - (ze - 24) + 126) << 23) | ((zb << (ze - 8)) & 0x007fffff));
+        else ret[2] = Float.intBitsToFloat((zs << 31) | ((me - ze + 127) << 23) | ((zb << (ze + 16)) & 0x007fffff));
     }
 
     public static float hfdec(short bits) {
@@ -641,6 +639,31 @@ public class Utils {
                 (ee << 3) |
                 (m >> 20);
         return ((byte) f8);
+    }
+
+    public static void uvec2oct(float[] buf, float x, float y, float z) {
+	float m = 1.0f / (Math.abs(x) + Math.abs(y) + Math.abs(z));
+	float hx = x * m, hy = y * m;
+	if(z >= 0) {
+	    buf[0] = hx;
+	    buf[1] = hy;
+	} else {
+	    buf[0] = (1 - Math.abs(hy)) * Math.copySign(1, hx);
+	    buf[1] = (1 - Math.abs(hx)) * Math.copySign(1, hy);
+	}
+    }
+
+    public static void oct2uvec(float[] buf, float x, float y) {
+	float z = 1 - (Math.abs(x) + Math.abs(y));
+	if(z < 0) {
+	    float xc = x, yc = y;
+	    x = (1 - Math.abs(yc)) * Math.copySign(1, xc);
+	    y = (1 - Math.abs(xc)) * Math.copySign(1, yc);
+	}
+	float f = 1 / (float)Math.sqrt((x * x) + (y * y) + (z * z));
+	buf[0] = x * f;
+	buf[1] = y * f;
+	buf[2] = z * f;
     }
 
     static char num2hex(int num) {
@@ -900,15 +923,6 @@ public class Utils {
 	    out.print(']');
 	}
 	if(term) out.println();
-    }
-
-    public static Resource myres(Class<?> c) {
-        ClassLoader cl = c.getClassLoader();
-        if (cl instanceof Resource.ResClassLoader) {
-            return (((Resource.ResClassLoader) cl).getres());
-        } else {
-            return (null);
-        }
     }
 
     public static String titlecase(String str) {
@@ -1381,6 +1395,14 @@ public class Utils {
                 return (false);
         }
         return (true);
+    }
+
+    public static <T> T find(Iterable<? extends T> in, Predicate<? super T> p) {
+        for(T obj : in) {
+            if(p.test(obj))
+                return(obj);
+        }
+        return(null);
     }
 
     @SafeVarargs

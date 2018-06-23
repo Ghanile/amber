@@ -1,3 +1,97 @@
+Version 1.67.11
+    Misc:
+        * Upstream code merge.
+
+
+Version 1.67.10
+    Misc:
+        * Upstream code merge.
+
+
+Version 1.67.9
+    Fixed:
+        * Crash when running on certain Intel drivers and 32-bit VMs.
+        * Peer into auto-selection not working.
+
+    Misc:
+        * Upstream code merge.
+
+
+Version 1.67.8
+    Fixed: 
+        * Crash when teleporting.
+
+
+Version 1.67.7
+    Misc:
+        * Added aggro radius to wild goats.
+        * Added mole to icons list.
+        * Add seashell to alarms list.
+        * Add treatments for coaler's cough.
+        * Ignore auto flower menu settings for eatable curios and spitroast.
+
+
+Version 1.67.6
+    Fixed:
+        * (hopefully) issues with ore dropping.
+
+    Misc:
+        * JVM argument for specifying whether to dump l10n strings.
+        * Better handling of bounding boxes for rlink-ed resources.
+
+
+Version 1.67.5
+    New: 
+        * Added hitbox for pig and goat (ported from Clenda's client).
+        * Added goat to the Shoo command (ported from Clenda's client).
+        * Added goat to the LeashAnimal command (ported from Clenda's client).
+        * Added lizards and snails to icons list.
+        * Added sound effect for eagles.
+
+    Fixed:
+        * Nanny avatar in livestock manager.
+
+    Misc:
+        * Changed key binding for taking screenshots and saving them locally to Ctrl+S.
+        * Upstream code merge.
+
+
+Version 1.67.4
+    New:
+        * Added goats to the livestock manager.
+
+    Misc:
+        * Re-enable alternative openings option.
+        * Revert last ko l10n update due to reverted combat.
+
+
+Version 1.67.3
+    New:
+        * Option to use F1-F10 for combat (Clenda).
+
+    Misc:
+        * Added goats to the clover feeder.
+        * Update ko l10n.
+        * Upstream code merge.
+
+
+Version 1.67.2
+    Fixed:
+        * Wear & armor tooltips
+
+
+Version 1.67.1
+    Fixed:
+        * Crash when viewing barter-stands with price set to gems.
+        * Wound treatments for wretched gore and sever mauling.
+
+    Misc:
+        * Added sound effect for seals.
+        * Added peer into to the menu list.
+        * Added cattail to the icons list.
+        * Upstream code merge.
+
+
 Version 1.67.0
     Fixed:
         * Troll belt.
